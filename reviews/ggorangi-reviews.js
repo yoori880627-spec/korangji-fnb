@@ -10,19 +10,23 @@
      - exclude  : 상품명에 이 단어가 있으면 keywords 에 걸려도 제외 (선택)
      같은 상품군의 카페24 상품들은 모두 같은 네이버 리뷰를 보여줍니다.
      ================================================================ */
+  var X = ['피크닉', '비밀'];   // 여러 상품이 섞인 세트/행사창은 키워드 매칭에서 제외
   var GROUPS = [
-    { name: '약과',          cafe24: [43],                 naver: ['8906031486'], keywords: ['약과'] },
-    { name: '두바이쫀득쿠키', cafe24: [78],                 naver: [],             keywords: ['쫀득 쿠키', '쫀득쿠키', '두쫀쿠'] },
-    { name: '꼬랑지마카롱',   cafe24: [34, 46, 81, 59],     naver: [],             keywords: ['마카롱'], exclude: ['후레이크', '꼬끄'] },
-    { name: '힐로우바',       cafe24: [32, 62, 63, 66, 83], naver: [],             keywords: ['힐로우바', '힐로우 바'] },
-    { name: '꼬끄 후레이크',  cafe24: [30, 85],             naver: [],             keywords: ['후레이크'] }
-    /* 예) { name: '나쵸칩', cafe24: [84], naver: ['1234567890'], keywords: ['나쵸'] } */
+    { name: '약과',          cafe24: [43],                 naver: ['8906031486'], keywords: [] },
+    { name: '두바이쫀득쿠키', cafe24: [78],                 naver: ['13090121881', '12969856469', '13635227357'], keywords: ['쫀득쿠키', '쫀득 쿠키'], exclude: X },
+    { name: '꼬랑지마카롱',   cafe24: [34, 46, 81, 59],     naver: ['10611185703', '6957805087', '5959915768'], keywords: ['뚱카롱', '윗미 마카롱'], exclude: X.concat(['후레이크', '꼬끄', '키토', '사그램']) },
+    { name: '힐로우바',       cafe24: [32, 62, 63, 66, 83], naver: ['9149565686'], keywords: ['힐로우바'], exclude: X },
+    { name: '나쵸칩',         cafe24: [84],                 naver: ['13664442313', '13746596725', '13746678335'], keywords: ['나쵸칩'], exclude: X },
+    { name: '두바이초콜릿',   cafe24: [48],                 naver: ['11150214525'], keywords: ['두바이 초콜릿', '두바이초콜릿'], exclude: X },
+    { name: '꼬끄 후레이크',  cafe24: [30, 85],             naver: ['5471892506', '13812363886'], keywords: [], exclude: X }
   ];
 
   var root = document.getElementById('gj-text-reels'); if (!root) return;
   if (root.getAttribute('data-gj-groups') === '1') return;   // 중복 실행 방지
   root.setAttribute('data-gj-groups', '1');
-  root.setAttribute('data-json', window.GJ_REVIEWS_JSON || '/web/yakgwaReviews.json?v=20261113');
+  root.setAttribute('data-json', window.GJ_REVIEWS_JSON || 'https://cdn.jsdelivr.net/gh/yoori880627-spec/korangji-fnb@cafe24-scripts/reviews/naverReviews.json');
+  root.setAttribute('data-limit', '30');        // 상품당 최신 30개
+  root.setAttribute('data-min-rating', '4');    // 별점 4점 이상만
   root.style.display = 'none';
   var oldMsg = root.querySelectorAll('p'); oldMsg.forEach(function(p){ if (/리뷰/.test(p.textContent) && !p.closest('.gjtr-head')) p.remove(); });
 
@@ -145,15 +149,18 @@
       return r && r.text && belongs(r, group) && (r.rating == null || r.rating >= minRating);
     });
     list.sort(function(a, b){ return String(b.date || '').localeCompare(String(a.date || '')); });
+    var total = list.length;
     list = list.slice(0, limit);
     log('group:', group.name, 'raw:', raw.length, 'matched:', list.length);
 
     if (!list.length) return;                 // 리뷰 없으면 영역 숨김 유지
 
-    if (countEl) countEl.textContent = '총 리뷰 ' + list.length + '개';
+    if (countEl) countEl.textContent = '총 리뷰 ' + total.toLocaleString('ko-KR') + '개';
     track.innerHTML = '';
     slidesEls = list.map(buildSlide);
     slidesEls.forEach(function(s){ track.appendChild(s); });
+    // 짧은 리뷰는 '더 보기' 숨김
+    requestAnimationFrame(function(){ slidesEls.forEach(function(c){ var t=c.querySelector('.gjtr-text'), m=c.querySelector('.gjtr-more'); if (t && m && t.scrollHeight <= t.clientHeight + 2) m.style.display='none'; }); });
     root.style.display = '';
     idx = 0; renderDots(slidesEls.length); goTo(0);
   }
