@@ -1,0 +1,426 @@
+<!--@layout(/layout/basic/main.html)-->
+
+<!--
+	##########################################################################################################################################################
+
+    [ W E B P U B L I C ]
+
+    이 쇼핑몰은 웹퍼블릭 서비스를 이용하고 있습니다.
+
+    [ 대표전화 ] 0507-1316-9190
+    [ 홈페이지 ] https://webpublic.co.kr
+
+    디자인의 모든 저작권은 웹퍼블릭에 있으며, 1Copy 라이선스로 최초 적용된 쇼핑몰에서만 사용할 수 있습니다.
+
+    ※ 웹퍼블릭 콘텐츠 라이선스 고지 ※
+
+    🔹 본 사이트에 존재하는 모든 기술적 소스코드의 저작권은 오직 웹퍼블릭에 있습니다.
+    🔹 본 사이트에 존재하는 기술적 소스코드를 사용하거나 변형하여 활용하는 경우, 저작권법에 의거하여 법적 고지를 위반하는 것으로 판단합니다.
+    🔹 웹퍼블릭은 디자인 및 콘텐츠 보호를 최우선으로 하며, 민형사상의 조치를 취할 수 있습니다.
+
+	##########################################################################################################################################################
+-->
+
+<!--
+	✔️ 메인페이지 입니다.
+
+	🔅파일을 열 때는 아래 @import 영역에 마우스 오버 후 "[파일열기]" 를 클릭하세요.
+
+    🔅각 영역을 비노출할 경우 '@'를 삭제하고, 추후 사용시 다시 '@'를 넣어주시면 됩니다.
+
+	🔅배너이미지 교체 시 '웹퍼블릭 배너매니저'에서 교체해 주세요.
+-->
+
+
+<!-- [🏞️ 배너] 메인 슬라이드 -->
+<!-- '관리자 > 앱 > 웹퍼블릭 배너매니저'에서 설정합니다. -->
+<!--@import(/index_banner_100.html)-->
+
+
+<!-- [🏞️ 배너] 카테고리-->
+<!-- '관리자 > 앱 > 웹퍼블릭 배너매니저'에서 설정합니다. -->
+<!--@import(/index_banner_category.html)-->
+
+<!-- [🏞️ 배너] -->
+<!-- '관리자 > 앱 > 웹퍼블릭 배너매니저'에서 설정합니다. -->
+<!--import(/index_banner_300.html)-->
+
+<!-- 🧩 타임세일 메인페이지 위젯 -->
+<upsell-widget-timesale data-widget-id="8535" data-content-center="false" style="--container-max-width: 1200px; --mobile-padding: 0 15px"></upsell-widget-timesale>
+
+<!-- 🧩 메인페이지 위젯 -->
+<upsell-widget-main-page data-widget-id="8532"></upsell-widget-main-page>
+<!-- === Shorts (Vimeo) · Responsive Carousel (2/3/4 per view) · Unlimited items · Lazy mount === -->
+
+<!-- [상품진열] TIME SALE -->
+<!-- '관리자 > 상품 > 상품진열 > 메인 진열'에서 관리합니다. -->
+<!--@import(/index_product_100.html)-->
+
+
+
+<!-- === /GGORANGJI · SmartStore Reviews === -->
+<style>
+  /* 섹션 좌우 여백/슬라이드 개수/간격은 변수로 제어 */
+  .shorts-wrap {
+    --side-pad: 24px;   /* 좌우 패딩: 섹션 태그의 style로 덮어쓰기 가능 */
+    margin: 32px 0;
+    padding-left: var(--side-pad);
+    padding-right: var(--side-pad);
+  }
+  .shorts-head, .shorts-carousel { max-width: 1320px; margin: 0 auto; }
+  .shorts-head { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px; }
+  .shorts-head h3 { font-size:1.25rem; font-weight:700; margin:0; }
+
+  /* 캐러셀 */
+  .shorts-carousel { position:relative; }
+  .shorts-carousel .viewport {
+    --slide-gap: 12px;     /* 슬라이드 간격 */
+    --per-view: 2;         /* 기본(모바일) 2개 */
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x mandatory; display:flex; gap:var(--slide-gap); padding-bottom:6px;
+  }
+  @media (min-width: 768px)  { .shorts-carousel .viewport { --per-view: 3; } } /* 태블릿 */
+  @media (min-width: 1200px) { .shorts-carousel .viewport { --per-view: 6; } } /* 데스크탑 */
+
+  .shorts-carousel .slide {
+    /* 한 화면에 N개: gap을 고려해 폭 계산 */
+    flex: 0 0 calc((100% - (var(--per-view) - 1) * var(--slide-gap)) / var(--per-view));
+    scroll-snap-align:start;
+    position:relative; text-decoration:none; color:inherit;
+    border-radius:16px; overflow:hidden; background:#000;
+  }
+
+  /* 공통 미디어 프레임 */
+  .short-media { position:relative; width:100%; aspect-ratio:9/16; background:#000; }
+  .short-media::before { content:""; display:block; padding-top:177.78%; } /* fallback */
+  .short-media > .vimeo-holder { position:absolute; inset:0; }
+  .short-media iframe {
+    position:absolute; inset:0; width:100%; height:100%; display:block; border:0;
+    pointer-events:none; /* 링크/스와이프 우선 */
+  }
+
+  .short-badge, .short-title, .short-cta, .short-error {
+    position:absolute; left:10px; right:10px; z-index:2; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.6);
+  }
+  .short-badge { top:10px; width:max-content; font-size:.75rem; font-weight:700; padding:6px 8px; border-radius:999px; background:rgba(0,0,0,.35); }
+  .short-title { bottom:38px; font-size:.9rem; font-weight:600; }
+  .short-cta { bottom:10px; left:auto; font-size:.75rem; font-weight:700; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.9); color:#111; }
+  .short-error { bottom:10px; left:10px; right:auto; background:rgba(220,0,0,.85); padding:6px 8px; border-radius:8px; font-size:.75rem; display:none; }
+
+  /* 네비게이션 버튼 */
+  .nav-btn {
+    position:absolute; top:50%; transform:translateY(-50%);
+    background:rgba(0,0,0,.45); color:#fff; border:0; width:38px; height:38px;
+    border-radius:999px; display:flex; align-items:center; justify-content:center; z-index:4;
+  }
+  .nav-btn[disabled] { opacity:.35; }
+  .nav-prev { left:4px; } .nav-next { right:4px; }
+</style>
+
+<div class="shorts-wrap" style="--side-pad: 24px;">
+  <div class="shorts-head"><h3>오늘의 릴스</h3></div>
+
+  <!-- 캐러셀(모바일·데스크탑 공통) -->
+  <div class="shorts-carousel" id="shortsCarousel">
+    <button class="nav-btn nav-prev" type="button" aria-label="이전">‹</button>
+    <div class="viewport" id="carouselViewport"></div>
+    <button class="nav-btn nav-next" type="button" aria-label="다음">›</button>
+  </div>
+</div>
+
+<script>
+  /* ========= 원하는 만큼 추가하면 됩니다 =========
+     - url: https://vimeo.com/비디오ID  또는 https://player.vimeo.com/video/비디오ID?h=해시
+  */
+  const SHORTS_DATA = [ 
+    // 여기에 마음껏 추가 ↓ (개수 제한 없음)
+       { url:"https://vimeo.com/1120758717", poster:"",  link:"/product/%EC%B6%94%EC%84%9D-%EC%84%B8%ED%8A%B8-%ED%9E%90%EB%A1%9C%EC%9A%B0-%EC%95%BD%EA%B3%BC-4box/67/category/77/display/1/", title:"힐로우약과", badge:"HOT" },
+       { url:"https://vimeo.com/1120758806", poster:"",  link:"/product/%EC%B6%94%EC%84%9D-%EC%84%B8%ED%8A%B8-%ED%9E%90%EB%A1%9C%EC%9A%B0-%EC%95%BD%EA%B3%BC-4box/67/category/77/display/1/", title:"힐로우약과", badge:"HOT" },
+       { url:"https://vimeo.com/1120760017", poster:"",  link:"/product/%EC%B6%94%EC%84%9D-%EC%84%B8%ED%8A%B8-%ED%9E%90%EB%A1%9C%EC%9A%B0-%EC%95%BD%EA%B3%BC-4box/67/category/77/display/1/", title:"힐로우약과", badge:"HOT" },
+       { url:"https://vimeo.com/1120760094", poster:"",  link:"/product/%EC%B6%94%EC%84%9D-%EC%84%B8%ED%8A%B8-%ED%9E%90%EB%A1%9C%EC%9A%B0-%EC%95%BD%EA%B3%BC-4box/67/category/77/display/1/", title:"힐로우약과", badge:"HOT" },
+       { url:"https://vimeo.com/1120760670", poster:"",  link:"/product/%EC%B6%94%EC%84%9D-%EC%84%B8%ED%8A%B8-%ED%9E%90%EB%A1%9C%EC%9A%B0-%EC%95%BD%EA%B3%BC-4box/67/category/77/display/1/", title:"힐로우약과", badge:"HOT" },
+       { url:"https://vimeo.com/1120760715", poster:"",  link:"/product/%EC%B6%94%EC%84%9D-%EC%84%B8%ED%8A%B8-%ED%9E%90%EB%A1%9C%EC%9A%B0-%EC%95%BD%EA%B3%BC-4box/67/category/77/display/1/", title:"힐로우약과", badge:"HOT" },
+       { url:"https://vimeo.com/1120761018", poster:"",  link:"/product/%EC%B6%94%EC%84%9D-%EC%84%B8%ED%8A%B8-%ED%9E%90%EB%A1%9C%EC%9A%B0-%EC%95%BD%EA%B3%BC-4box/67/category/77/display/1/", title:"힐로우약과", badge:"HOT" },
+       { url:"https://vimeo.com/1120761166", poster:"",  link:"/product/%EC%B6%94%EC%84%9D-%EC%84%B8%ED%8A%B8-%ED%9E%90%EB%A1%9C%EC%9A%B0-%EC%95%BD%EA%B3%BC-4box/67/category/77/display/1/", title:"힐로우약과", badge:"HOT" },
+    { url:"https://vimeo.com/1113713036", poster:"", link:"/product/힐로우-바/32/category/57/display/1/", title:"힐로우바", badge:"HOT" },
+    { url:"https://vimeo.com/1113712961", poster:"",  link:"/product/힐로우-바/32/category/57/display/1/", title:"힐로우바", badge:"HOT" },
+    { url:"https://vimeo.com/1113712482", poster:"", link:"/product/힐로우-바/32/category/57/display/1/", title:"힐로우바", badge:"HOT" },
+    { url:"https://vimeo.com/1113712387", poster:"",  link:"/product/힐로우-바/32/category/57/display/1/", title:"힐로우바", badge:"HOT" },
+    { url:"https://vimeo.com/1113711498", poster:"",  link:"/product/힐로우-바/32/category/57/display/1/", title:"힐로우바", badge:"HOT" },
+    { url:"https://vimeo.com/1113690872", poster:"",  link:"/product/힐로우-바/32/category/57/display/1/", title:"힐로우바", badge:"HOT" },
+    { url:"https://vimeo.com/1113725767", poster:"", link:"/product/힐로우-바/32/category/57/display/1/", title:"힐로우바", badge:"HOT" },
+    { url:"https://vimeo.com/1113725869", poster:"",  link:"/product/힐로우-바/32/category/57/display/1/", title:"힐로우바", badge:"HOT" },
+    { url:"https://vimeo.com/1113726020", poster:"",  link:"/product/힐로우-바/32/category/57/display/1/", title:"힐로우바", badge:"HOT" }
+  ];
+
+  /* ========= 옵션 ========= */
+  const MAX_TRY = 5;             // 자동재생 재시도
+  const GAP_MS  = 600;           // 재시도 간격
+  const PRELOAD_AHEAD = 1;       // 활성 구간 앞뒤로 미리 장착(0~2 권장)
+
+  /* Vimeo API */
+  function loadVimeoAPI() {
+    return new Promise((res, rej) => {
+      if (window.Vimeo && window.Vimeo.Player) return res();
+      const s = document.createElement('script');
+      s.src = 'https://player.vimeo.com/api/player.js'; s.async = true;
+      s.onload = () => res(); s.onerror = () => rej(new Error('Vimeo API 로딩 실패'));
+      document.head.appendChild(s);
+    });
+  }
+  function parseVimeo(urlOrId) {
+    if (!urlOrId) return { id:'', hash:'' };
+    if (/^\d+$/.test(String(urlOrId))) return { id:String(urlOrId), hash:'' };
+    try {
+      const u = new URL(urlOrId, location.href);
+      const m = u.pathname.match(/\/(?:video\/)?(\d+)/);
+      return { id: m ? m[1] : '', hash: u.searchParams.get('h') || '' };
+    } catch { return { id:'', hash:'' }; }
+  }
+  function buildIframe(url) {
+    const { id, hash } = parseVimeo(url);
+    const params = new URLSearchParams({
+      background:'1', autoplay:'1', muted:'1', loop:'1',
+      autopause:'0', dnt:'1', playsinline:'1'
+    });
+    if (hash) params.set('h', hash);
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://player.vimeo.com/video/${id}?${params.toString()}`;
+    iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+    iframe.title = 'Vimeo video';
+    iframe.style.position = 'absolute';
+    iframe.style.inset = '0';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = '0';
+    iframe.style.pointerEvents = 'none';
+    return iframe;
+  }
+
+  const carEl   = document.getElementById('shortsCarousel');
+  const vpEl    = document.getElementById('carouselViewport');
+  const prevBtn = carEl.querySelector('.nav-prev');
+  const nextBtn = carEl.querySelector('.nav-next');
+
+  const slides = []; // { card, holder, player, mounted, url }
+  let currentIndex = 0;
+
+  /* ========= 렌더 ========= */
+  function buildCarousel() {
+    vpEl.innerHTML = ''; slides.length = 0;
+
+    SHORTS_DATA.forEach(item => {
+      const a = document.createElement('a');
+      a.className = 'slide';
+      a.href = item.link || 'javascript:void(0)';
+      a.target = (item.link && /^https?:\/\//.test(item.link)) ? '_blank' : '_self';
+      a.rel = a.target === '_blank' ? 'noopener' : '';
+
+      const media = document.createElement('div'); media.className = 'short-media';
+      if (item.poster) {
+        media.style.backgroundImage = `url('${item.poster}')`;
+        media.style.backgroundSize = 'cover';
+        media.style.backgroundPosition = 'center';
+      }
+
+      const holder = document.createElement('div');
+      holder.className = 'vimeo-holder';
+      media.appendChild(holder);
+
+      if (item.badge) { const b=document.createElement('div'); b.className='short-badge'; b.textContent=item.badge; media.appendChild(b); }
+      if (item.title) { const t=document.createElement('div'); t.className='short-title'; t.textContent=item.title; media.appendChild(t); }
+      const cta = document.createElement('div'); cta.className='short-cta'; cta.textContent='자세히'; media.appendChild(cta);
+
+      const err = document.createElement('div'); err.className='short-error'; err.textContent='탭하여 재생 (브라우저 정책)'; media.appendChild(err);
+
+      a.appendChild(media); vpEl.appendChild(a);
+      slides.push({ card:a, holder, player:null, mounted:false, url:item.url });
+    });
+
+    vpEl.addEventListener('scroll', onScrollSnap, { passive:true });
+    prevBtn.addEventListener('click', () => snapPage(-1));
+    nextBtn.addEventListener('click', () => snapPage(1));
+
+    updateNav();
+    initPlayers();
+    // 리사이즈/회전 시 스텝/보여줄 범위 재계산
+    window.addEventListener('resize', () => { requestAnimationFrame(()=>{ clampIndex(); updateNav(); applyMounting(); }); }, { passive:true });
+    window.addEventListener('orientationchange', () => { setTimeout(()=>{ clampIndex(); updateNav(); applyMounting(); }, 200); });
+  }
+
+  function getGapPx() {
+    const g = getComputedStyle(vpEl).gap || getComputedStyle(vpEl).columnGap || '12px';
+    const n = parseFloat(g); return isNaN(n) ? 12 : n;
+  }
+  function getPerView() {
+    const pv = parseFloat(getComputedStyle(vpEl).getPropertyValue('--per-view'));
+    return isNaN(pv) ? 2 : pv;
+  }
+  function getStep() {
+    const first = vpEl.querySelector('.slide');
+    if (!first) return vpEl.clientWidth;
+    const w = first.getBoundingClientRect().width;
+    return w + getGapPx();
+  }
+  function clampIndex() {
+    const pv = getPerView();
+    currentIndex = Math.max(0, Math.min(currentIndex, Math.max(0, slides.length - pv)));
+  }
+
+  function onScrollSnap() {
+    const step = getStep();
+    const idx = Math.round(vpEl.scrollLeft / Math.max(1, step));
+    if (idx !== currentIndex) {
+      currentIndex = idx;
+      clampIndex();
+      updateNav();
+      applyMounting();
+    }
+  }
+
+  function snapPage(dir) {
+    const pv = getPerView();
+    const step = getStep();
+    const target = Math.max(0, Math.min(currentIndex + dir * pv, Math.max(0, slides.length - pv)));
+    vpEl.scrollTo({ left: target * step, behavior: 'smooth' });
+  }
+
+  function updateNav() {
+    const pv = getPerView();
+    prevBtn.disabled = currentIndex <= 0;
+    nextBtn.disabled = currentIndex >= Math.max(0, slides.length - pv);
+  }
+
+  /* ========= Vimeo 장착/해제 (보이는 구간만) ========= */
+  async function initPlayers() {
+    await loadVimeoAPI();
+    currentIndex = 0; applyMounting(); // 첫 화면 보이는 만큼만 장착
+  }
+
+  function applyMounting() {
+    const pv = getPerView();
+    const start = currentIndex;
+    const end   = currentIndex + pv - 1;
+    const mountMin = Math.max(0, start - PRELOAD_AHEAD);
+    const mountMax = Math.min(slides.length - 1, end + PRELOAD_AHEAD);
+
+    slides.forEach((s, i) => {
+      const shouldMount = (i >= mountMin && i <= mountMax);
+      if (shouldMount && !s.mounted) {
+        const iframe = buildIframe(s.url);
+        s.holder.innerHTML = '';
+        s.holder.appendChild(iframe);
+        const p = new Vimeo.Player(iframe);
+        s.player = p; s.mounted = true;
+
+        let tries = 0;
+        const attempt = () => {
+          p.setMuted(true).then(()=>p.setLoop(true)).then(()=>p.play()).then(()=>{
+            s.card.classList.remove('need-interact');
+            const e = s.card.querySelector('.short-error'); if (e) e.style.display = 'none';
+          }).catch(()=>{
+            if (++tries < MAX_TRY) setTimeout(attempt, GAP_MS);
+            else {
+              s.card.classList.add('need-interact');
+              const e = s.card.querySelector('.short-error'); if (e) e.style.display = 'block';
+            }
+          });
+        };
+        attempt();
+
+        // need-interact 상태에서 탭하면 재생(링크 이동 방지)
+        s.card.addEventListener('click', (ev) => {
+          if (!s.card.classList.contains('need-interact')) return;
+          ev.preventDefault();
+          s.player && s.player.play().then(()=>{
+            s.card.classList.remove('need-interact');
+            const e = s.card.querySelector('.short-error'); if (e) e.style.display = 'none';
+          }).catch(()=>{});
+        });
+
+      } else if (!shouldMount && s.mounted) {
+        try { s.player && s.player.pause().catch(()=>{}); } catch(_){}
+        s.holder.innerHTML = '';
+        s.player = null; s.mounted = false;
+        s.card.classList.remove('need-interact');
+        const e = s.card.querySelector('.short-error'); if (e) e.style.display = 'none';
+      }
+    });
+  }
+
+  /* ========= 초기화 ========= */
+  function initShorts() { buildCarousel(); }
+  window.addEventListener('DOMContentLoaded', initShorts, { once:true });
+</script>
+
+<!-- 📝 리뷰 -->
+<!--@import(/index_board_review.html)-->
+
+
+
+
+<!-- [상품진열] 유튜브 쇼츠 -->
+<!-- '관리자 > 상품 > 상품진열 > 메인 진열'에서 관리합니다. -->
+<!--import(/index_yt_shorts.html)-->
+
+
+<!-- [상품진열] BEST SELLER -->
+<!-- '관리자 > 상품 > 상품진열 > 메인 진열'에서 관리합니다. -->
+<!--@import(/index_product_200.html)-->
+
+
+
+<!-- [🏞️ 배너] -->
+<!-- '관리자 > 앱 > 웹퍼블릭 배너매니저'에서 설정합니다. -->
+<!--import(/index_banner_600.html)-->
+
+<!--
+<!-- [상품진열] Tab * 3 -->
+<!-- '관리자 > 상품 > 상품진열 > 메인 진열'에서 관리합니다. -->
+<!-- '관리자 > 앱 > 웹퍼블릭 배너매니저'에서 설정합니다. -->
+<!--import(/index_product_tab.html)-->
+
+
+
+
+
+<!-- [상품진열] NEW ARRIVAL -->
+<!-- '관리자 > 상품 > 상품진열 > 메인 진열'에서 관리합니다. -->
+<!--import(/index_product_300.html)-->
+
+
+<!-- [🏞️ 배너] 이벤트 -->
+<!-- '관리자 > 앱 > 웹퍼블릭 배너매니저'에서 설정합니다. -->
+<!--import(/index_banner_200.html)-->
+
+
+<!-- [상품진열] LAST CHANCE! -->
+<!-- '관리자 > 상품 > 상품진열 > 메인 진열'에서 관리합니다. -->
+<!--@import(/index_product_400.html)-->
+
+
+<!-- [상품진열] 요즘 주목받는제품 -->
+<!-- '관리자 > 상품 > 상품진열 > 메인 진열'에서 관리합니다. -->
+<!--@import(/index_rank.html)-->
+
+
+
+
+
+<!-- [🏞️ 영상] -->
+<!-- '관리자 > 앱 > 웹퍼블릭 배너매니저'에서 설정합니다. -->
+<!--@import(/index_banner_400.html)-->
+
+
+<!-- [🏞️ 4 x 1 하단 배너] -->
+<!-- '관리자 > 앱 > 웹퍼블릭 배너매니저'에서 설정합니다. -->
+<!--import(/index_banner_500.html)-->
+
+
+<!-- 레이어 팝업-->
+<!-- '관리자 > 앱 > 웹퍼블릭 배너매니저'에서 설정합니다. -->
+<!--@import(/_wp/module/main/modal.html)-->
+
+
+<!--@define(cmc_log)-->
+<!--@import(/apps/cafe24plusapp/marketing/recommend_install.html)-->

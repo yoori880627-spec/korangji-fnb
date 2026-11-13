@@ -1,0 +1,294 @@
+<!-- === GGORANGJI · Text-only Review Carousel (Smooth + Snap, Mobile Compact) === -->
+<div id="gj-text-reels"
+     data-json="/web/yakgwaReviews.json?v=20250829"
+     data-product-id="8906031486"
+     data-limit="200"
+     data-debug="1" aria-label="GGORANGJI Text Reviews">
+
+  <div class="gjtr-head">
+    <div class="gjtr-count"></div>
+    <h2 class="gjtr-title">Reviews · GGORANGJI</h2>
+    <p class="gjtr-desc">스마트스토어 구매자 텍스트 리뷰</p>
+  </div>
+
+  <div class="gjtr-viewport">
+    <div class="gjtr-track" role="list"></div>
+
+    <button class="gjtr-nav gjtr-prev" aria-label="이전">‹</button>
+    <button class="gjtr-nav gjtr-next" aria-label="다음">›</button>
+    <div class="gjtr-dots" aria-hidden="true"></div>
+  </div>
+</div>
+
+<style>
+:root{
+  --ink-900:#0F1012; --ink-700:#3E4046; --ink-500:#6F7480;
+  --line:#E9EBF0; --brand:#FF7A00; --brand-ink:#E66D00;
+  --card:#FFFFFF; --bg:#FFFFFF; --soft:0 8px 24px rgba(16,24,40,.06);
+  --font:"Pretendard","Noto Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+
+  /* 레이아웃 변수(브레이크포인트에서 변경) */
+  --slides: 5;          /* 데스크탑: 한 화면 카드 수 */
+  --gap: 12px;          /* 카드 간 간격 */
+  --sidepad: 56px;      /* 내부 좌우 패딩 */
+  --min-card-h: 180px;
+  --card-radius: 14px;
+  --btn-size: 32px;
+}
+
+#gj-text-reels{
+  font-family:var(--font); color:var(--ink-900);
+  margin:clamp(12px,2.4vw,28px) 0;
+  max-width: 1140px;            /* vreview 처럼 중앙 정렬 + 폭 제한 */
+  margin-left: auto; margin-right: auto;
+  padding-left: 20px; padding-right: 20px;  /* 모바일 최소 여백 */
+}
+@media (min-width:1200px){
+  #gj-text-reels{ padding-left: 60px; padding-right: 60px; } /* 데스크탑 넉넉한 여백 */
+}
+
+.gjtr-head{
+  display:grid; grid-template-columns: 1fr auto; align-items:end;
+  gap:8px; margin:0 6px 12px;
+}
+.gjtr-count{ font-size:14px; font-weight:700; color:var(--ink-700); grid-column:1 / -1; }
+.gjtr-title{ margin:0; font-size:clamp(18px,2vw,22px); font-weight:800; letter-spacing:-.02em }
+.gjtr-desc{ margin:0; font-size:12px; color:var(--ink-500) }
+
+/* 캐러셀 프레임 */
+.gjtr-viewport{
+  position:relative; background:var(--bg); border:1px solid var(--line);
+  border-radius:16px; padding:18px var(--sidepad); box-shadow:var(--soft);
+}
+
+/* 트랙: 네이티브 스크롤 + 스냅 */
+.gjtr-track{
+  display:flex; gap:var(--gap);
+  overflow-x:auto; overflow-y:hidden;
+  -webkit-overflow-scrolling: touch;   /* iOS 관성 스크롤 */
+  scroll-snap-type: x mandatory;       /* 스냅 핵심 */
+  scroll-behavior:smooth;
+  scrollbar-width:none;                /* 파폭 스크롤바 숨김 */
+  user-select:none;
+}
+.gjtr-track::-webkit-scrollbar{ display:none; }
+
+/* 카드: 스냅 기준점 + 유연한 높이 */
+.gjtr-card{
+  scroll-snap-align: start;
+  flex:0 0 calc((100% - (var(--sidepad)*2) - (var(--gap)*(var(--slides) - 1))) / var(--slides));
+  background:var(--card); border:1px solid var(--line); border-radius:var(--card-radius);
+  box-shadow:var(--soft); padding:12px 12px 10px;
+  display:flex; flex-direction:column; gap:8px; min-height:var(--min-card-h);
+  will-change: transform;            /* 미세한 성능 힌트 */
+}
+.gjtr-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--ink-700)}
+.gjtr-dot{width:4px;height:4px;border-radius:999px;background:#D1D5DB;display:inline-block}
+.gjtr-stars{color:#F2B400;font-size:12px}
+.gjtr-text{
+  margin:0;color:var(--ink-900);font-size:13px;line-height:1.55;
+  display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden
+}
+.gjtr-more{margin:0;padding:0;background:none;border:0;color:var(--brand-ink);font-size:12px;cursor:pointer;align-self:flex-start}
+.gjtr-more:hover{color:var(--brand);text-decoration:underline}
+.gjtr-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+.gjtr-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-700);text-decoration:none}
+.gjtr-link:hover{color:var(--ink-900);text-decoration:underline}
+
+/* 내비 버튼 (모바일에서도 보이게 — 필요 없으면 @media로 숨기세요) */
+.gjtr-nav{
+  position:absolute; top:50%; transform:translateY(-50%); z-index:3;
+  width:var(--btn-size); height:var(--btn-size); border-radius:999px;
+  border:1px solid var(--line); background:#fff; color:var(--ink-900);
+  display:grid; place-items:center; cursor:pointer; box-shadow:var(--soft);
+}
+.gjtr-prev{ left: max(8px, calc(var(--sidepad) - 36px)); }
+.gjtr-next{ right:max(8px, calc(var(--sidepad) - 36px)); }
+.gjtr-nav:hover{ border-color:var(--brand); color:var(--brand-ink); background:#fff }
+
+/* 도트 */
+.gjtr-dots{ display:flex; justify-content:center; gap:6px; margin-top:10px }
+.gjtr-dot-btn{ width:6px; height:6px; background:#C9CFDA; border-radius:999px; opacity:.8 }
+.gjtr-dot-btn.is-active{ width:16px; background:linear-gradient(90deg, var(--brand), #FF9C40); opacity:1 }
+
+/* 반응형: 태블릿 3장, 모바일 1장(더 작게) */
+@media (max-width:1199px){
+  :root{ --slides:3; --gap:10px; --sidepad:20px; --min-card-h:160px; }
+  .gjtr-text{ -webkit-line-clamp:6; font-size:13px; }
+}
+@media (max-width:640px){
+  :root{ --slides:1; --gap:10px; --sidepad:14px; --min-card-h:140px; --btn-size:28px; }
+  .gjtr-card{ padding:10px; border-radius:12px; }
+  .gjtr-text{ font-size:12.5px; -webkit-line-clamp:6; line-height:1.5; }
+  .gjtr-meta{ font-size:11.5px; }
+  .gjtr-stars{ font-size:11.5px; }
+  .gjtr-nav{ top:auto; bottom:12px; transform:none; } /* 버튼이 카드와 겹치지 않게 하단 배치 */
+}
+
+/* 모션 줄이기 설정 존중 */
+@media (prefers-reduced-motion: reduce){
+  .gjtr-track{ scroll-behavior:auto; }
+}
+</style>
+
+<script>
+(function(){
+  var root=document.getElementById('gj-text-reels'); if(!root) return;
+
+  /* ====== 데이터 소스 ====== */
+  var jsonUrl=root.getAttribute('data-json');
+  var productId=(root.getAttribute('data-product-id')||'').trim();
+  var limit=Math.min(Math.max(parseInt(root.getAttribute('data-limit')||'200',10),1),1000);
+  var debug=(root.getAttribute('data-debug')||'')==='1';
+
+  /* ====== 엘리먼트 ====== */
+  var track=root.querySelector('.gjtr-track');
+  var dotsWrap=root.querySelector('.gjtr-dots');
+  var btnPrev=root.querySelector('.gjtr-prev');
+  var btnNext=root.querySelector('.gjtr-next');
+  var countEl=root.querySelector('.gjtr-count');
+
+  var slidesEls=[], idx=0; // 슬라이드 DOM 배열, 현재 인덱스
+
+  function esc(t){return (t||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);}
+  function stars(n){n=parseInt(n||0,10); if(n<0)n=0; if(n>5)n=5; return '★'.repeat(n)+'☆'.repeat(5-n);}
+  function extractId(u){var m=(u||'').match(/\/products\/(\d+)/); return m?m[1]:'';}
+
+  /* ====== 카드 생성 ====== */
+  function buildSlide(r){
+    var card=document.createElement('article'); card.className='gjtr-card'; card.setAttribute('role','listitem');
+
+    var meta='<div class="gjtr-meta"><strong>'+esc(r.author||'익명')+'</strong>';
+    if(r.date){meta+='<span class="gjtr-dot"></span><span>'+esc(r.date)+'</span>';}
+    if(r.rating!=null){meta+='<span class="gjtr-dot"></span><span class="gjtr-stars" aria-label="별점 '+r.rating+'점">'+stars(r.rating)+'</span>';}
+    meta+='</div>';
+
+    var text=esc(r.text||'');
+    var body='<p class="gjtr-text" data-full="'+text+'">'+text+'</p>'
+            +'<button type="button" class="gjtr-more" aria-label="더보기">더 보기</button>';
+
+    var foot='<div class="gjtr-footer"><a class="gjtr-link" href="'+(r.source_url?esc(r.source_url):'#')+'" target="_blank" rel="noopener">원문 보기'
+            +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="margin-left:4px"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            +'</a></div>';
+
+    card.innerHTML = meta + body + foot;
+
+    // 더보기/접기
+    var btnMore=card.querySelector('.gjtr-more');
+    btnMore.addEventListener('click', function(e){
+      e.stopPropagation();
+      var p=card.querySelector('.gjtr-text');
+      var expanded = p.getAttribute('data-expanded')==='1';
+      if(expanded){
+        p.style.display='-webkit-box'; p.style.webkitLineClamp='5'; p.setAttribute('data-expanded','0');
+        this.textContent='더 보기';
+      }else{
+        p.style.display='block'; p.style.webkitLineClamp='unset'; p.setAttribute('data-expanded','1');
+        this.textContent='접기';
+      }
+    });
+
+    // 링크 클릭 보호
+    card.querySelector('.gjtr-link').addEventListener('click', function(e){ e.stopPropagation(); });
+
+    return card;
+  }
+
+  /* ====== 도트 ====== */
+  function renderDots(n){
+    dotsWrap.innerHTML='';
+    for(var i=0;i<n;i++){
+      var d=document.createElement('div'); d.className='gjtr-dot-btn'+(i===idx?' is-active':'');
+      d.addEventListener('click', (function(k){ return function(ev){ ev.stopPropagation(); goTo(k); };})(i));
+      dotsWrap.appendChild(d);
+    }
+  }
+  function updateDots(){
+    var ds=dotsWrap.querySelectorAll('.gjtr-dot-btn');
+    ds.forEach(function(el,i){ el.classList.toggle('is-active', i===idx); });
+  }
+
+  /* ====== 스냅 기반 이동 ====== */
+  function cardWidthWithGap(){
+    if(!slidesEls.length) return 0;
+    var w=slidesEls[0].getBoundingClientRect().width;
+    // gap 추정: 두 카드 좌측 오프셋 차이 - 카드폭
+    if(slidesEls.length>1){
+      var a=slidesEls[0].offsetLeft, b=slidesEls[1].offsetLeft;
+      var gap = Math.max(0, (b - a) - slidesEls[0].offsetWidth);
+      return w + gap;
+    }
+    return w;
+  }
+  function goTo(k){
+    k=Math.max(0, Math.min(k, slidesEls.length-1));
+    idx=k;
+    var targetLeft = slidesEls[k].offsetLeft;
+    track.scrollTo({left: targetLeft, behavior: 'smooth'});
+    updateDots();
+  }
+  function next(){ if(idx<slidesEls.length-1) goTo(idx+1); }
+  function prev(){ if(idx>0) goTo(idx-1); }
+
+  // 스크롤 시 현재 인덱스 계산(가벼운 rAF 스로틀)
+  var ticking=false;
+  track.addEventListener('scroll', function(){
+    if(ticking) return; ticking=true;
+    requestAnimationFrame(function(){
+      ticking=false;
+      var center=track.scrollLeft + track.clientWidth/2;
+      var best=0, bestDist=1e9;
+      for(var i=0;i<slidesEls.length;i++){
+        var rect=slidesEls[i].getBoundingClientRect();
+        var c=slidesEls[i].offsetLeft + rect.width/2;
+        var d=Math.abs(c - (track.scrollLeft + track.clientWidth/2));
+        if(d<bestDist){bestDist=d; best=i;}
+      }
+      if(best!==idx){ idx=best; updateDots(); }
+    });
+  });
+
+  btnPrev.addEventListener('click', function(e){ e.stopPropagation(); prev(); });
+  btnNext.addEventListener('click', function(e){ e.stopPropagation(); next(); });
+
+  /* ====== 데이터 적용 ====== */
+  function applyData(raw){
+    var pid=(productId||'').trim();
+    var filtered = pid ? raw.filter(x=> (x.source_url||'').match(/\/products\/(\d+)/)?.[1]===pid ) : raw.slice();
+    filtered = filtered.slice(0, limit);
+
+    if(countEl){ countEl.textContent = '총 리뷰 ' + filtered.length + '개'; }
+    if(debug){ console.log('[TextCarousel] raw:', raw.length, 'filtered:', filtered.length); }
+
+    if(filtered.length===0){
+      root.insertAdjacentHTML('beforeend', '<p style="color:var(--ink-500);margin-top:10px">표시할 리뷰가 없습니다.</p>');
+      return;
+    }
+
+    // DOM 렌더
+    track.innerHTML='';
+    slidesEls = filtered.map(function(x){
+      return {author:x.author, date:x.date, rating:x.rating, text:x.text, source_url:x.source_url};
+    }).map(buildSlide);
+
+    slidesEls.forEach(function(s){ track.appendChild(s); });
+    idx=0; renderDots(slidesEls.length); goTo(0);
+  }
+
+  async function load(){
+    try{
+      var res=await fetch(jsonUrl, {cache:'no-store'});
+      if(!res.ok) throw new Error('JSON '+res.status);
+      var raw=await res.json();
+      if(!Array.isArray(raw)) throw new Error('Invalid JSON payload');
+      applyData(raw);
+    }catch(e){
+      if(debug) console.error(e);
+      root.insertAdjacentHTML('beforeend','<p style="color:var(--ink-500);margin-top:10px">리뷰 데이터를 불러오지 못했습니다.</p>');
+    }
+  }
+
+  load();
+})();
+</script>
+<!-- === /GGORANGJI · Text-only Review Carousel === -->
