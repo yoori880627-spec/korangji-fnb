@@ -150,6 +150,7 @@
     });
     list.sort(function(a, b){ return String(b.date || '').localeCompare(String(a.date || '')); });
     var total = list.length;
+    var allList = list;
     list = list.slice(0, limit);
     log('group:', group.name, 'raw:', raw.length, 'matched:', list.length);
 
@@ -163,6 +164,81 @@
     requestAnimationFrame(function(){ slidesEls.forEach(function(c){ var t=c.querySelector('.gjtr-text'), m=c.querySelector('.gjtr-more'); if (t && m && t.scrollHeight <= t.clientHeight + 2) m.style.display='none'; }); });
     root.style.display = '';
     idx = 0; renderDots(slidesEls.length); goTo(0);
+    renderAllButton(allList);
+  }
+
+  /* ====== 전체 리뷰 보기 (모달 목록, 20개씩) ====== */
+  var ALL_CSS = '' +
+    '.gjtr-allbtn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;max-width:420px;margin:14px auto 0;height:46px;border-radius:999px;border:1px solid #E2E5EB;background:#fff;color:#0F1012;font:600 14px/1 inherit;cursor:pointer}' +
+    '.gjtr-allbtn b{color:#FF7A00}' +
+    '.gjtr-modal{position:fixed;inset:0;z-index:2147483000;background:rgba(15,16,18,.5);display:flex;align-items:flex-end;justify-content:center}' +
+    '.gjtr-sheet{background:#fff;width:100%;max-width:640px;max-height:88vh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;font-family:inherit;color:#0F1012}' +
+    '@media(min-width:700px){.gjtr-modal{align-items:center}.gjtr-sheet{border-radius:20px;max-height:84vh}}' +
+    '.gjtr-sh-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid #EEF0F3}' +
+    '.gjtr-sh-head h3{margin:0;font-size:17px;font-weight:700}.gjtr-sh-head h3 small{display:block;margin-top:3px;font-size:12px;font-weight:500;color:#6F7480}' +
+    '.gjtr-sh-x{width:36px;height:36px;border:0;background:#F3F4F6;border-radius:50%;font-size:18px;line-height:36px;cursor:pointer;color:#3E4046}' +
+    '.gjtr-sh-list{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 20px 20px}' +
+    '.gjtr-sh-item{padding:16px 0;border-bottom:1px solid #F1F2F5}' +
+    '.gjtr-sh-meta{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#6F7480;margin-bottom:6px}.gjtr-sh-meta strong{color:#3E4046;font-weight:600}.gjtr-sh-meta .s{color:#FFB400;letter-spacing:1px}' +
+    '.gjtr-sh-text{margin:0;font-size:14px;line-height:1.6;white-space:pre-line;word-break:keep-all}' +
+    '.gjtr-sh-more{display:block;width:100%;height:44px;margin-top:16px;border-radius:12px;border:1px solid #E2E5EB;background:#fff;font:600 14px/1 inherit;color:#3E4046;cursor:pointer}';
+
+  function renderAllButton(allList){
+    var old = root.querySelector('.gjtr-allbtn'); if (old) old.remove();
+    if (allList.length <= limit) return;
+    if (!document.getElementById('gjtr-all-css')) {
+      var st = document.createElement('style'); st.id = 'gjtr-all-css'; st.textContent = ALL_CSS; document.head.appendChild(st);
+    }
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'gjtr-allbtn';
+    btn.innerHTML = '스마트스토어 리뷰 전체 보기 <b>' + allList.length.toLocaleString('ko-KR') + '</b>';
+    btn.addEventListener('click', function(e){ e.stopPropagation(); openAll(allList); });
+    root.appendChild(btn);
+  }
+
+  function openAll(allList){
+    var PAGE = 20, shown = 0;
+    var prevOverflow = document.body.style.overflow;
+    var modal = document.createElement('div');
+    modal.className = 'gjtr-modal';
+    modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-modal', 'true'); modal.setAttribute('aria-label', '스마트스토어 리뷰 전체');
+    modal.innerHTML = '<div class="gjtr-sheet"><div class="gjtr-sh-head"><h3>스마트스토어 리뷰 ' + allList.length.toLocaleString('ko-KR') + '개<small>별점 4점 이상 · 최신순</small></h3>' +
+      '<button type="button" class="gjtr-sh-x" aria-label="닫기">✕</button></div><div class="gjtr-sh-list"></div></div>';
+    var list = modal.querySelector('.gjtr-sh-list');
+    function more(){
+      var frag = document.createDocumentFragment();
+      allList.slice(shown, shown + PAGE).forEach(function(r){
+        var it = document.createElement('div'); it.className = 'gjtr-sh-item';
+        it.innerHTML = '<div class="gjtr-sh-meta"><strong>' + esc(r.author || '익명') + '</strong>' +
+          (r.rating != null ? '<span class="s">' + stars(r.rating) + '</span>' : '') +
+          (r.date ? '<span>' + esc(r.date) + '</span>' : '') + '</div><p class="gjtr-sh-text">' + esc(r.text) + '</p>';
+        frag.appendChild(it);
+      });
+      shown = Math.min(shown + PAGE, allList.length);
+      var mb = list.querySelector('.gjtr-sh-more'); if (mb) mb.remove();
+      list.appendChild(frag);
+      if (shown < allList.length) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'gjtr-sh-more';
+        b.textContent = '더 보기 (' + shown + ' / ' + allList.length + ')';
+        b.addEventListener('click', more);
+        list.appendChild(b);
+      }
+    }
+    function close(){
+      document.removeEventListener('keydown', onKey);
+      modal.remove();
+      document.body.style.overflow = prevOverflow;
+      btnFocus && btnFocus.focus && btnFocus.focus();
+    }
+    function onKey(e){ if (e.key === 'Escape') close(); }
+    var btnFocus = root.querySelector('.gjtr-allbtn');
+    modal.addEventListener('click', function(e){ if (e.target === modal) close(); });
+    modal.querySelector('.gjtr-sh-x').addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    more();
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    modal.querySelector('.gjtr-sh-x').focus();
   }
 
   function start(){
