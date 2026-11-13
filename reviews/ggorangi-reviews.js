@@ -173,7 +173,19 @@
 
     fetch(jsonUrl)
       .then(function(res){ if (!res.ok) throw new Error('JSON ' + res.status); return res.json(); })
-      .then(function(raw){ if (!Array.isArray(raw)) throw new Error('Invalid JSON'); applyData(raw, group); })
+      .then(function(raw){
+        if (!Array.isArray(raw)) throw new Error('Invalid JSON');
+        applyData(raw, group);
+        // 스킨의 기존 스크립트(약과 리뷰)가 늦게 끝나 카드를 덮어쓰면 다시 적용 (최대 3회, 20초간)
+        var mine = countEl ? countEl.textContent : '', again = 0;
+        if (countEl && window.MutationObserver) {
+          var mo = new MutationObserver(function(){
+            if (countEl.textContent !== mine && again < 3) { again++; applyData(raw, group); mine = countEl.textContent; }
+          });
+          mo.observe(countEl, { childList: true, characterData: true, subtree: true });
+          setTimeout(function(){ mo.disconnect(); }, 20000);
+        }
+      })
       .catch(function(e){ log(e); });          // 실패해도 화면엔 아무것도 안 보이게
   }
 
