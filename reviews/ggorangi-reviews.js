@@ -156,7 +156,8 @@
 
     if (!list.length) return;                 // 리뷰 없으면 영역 숨김 유지
 
-    if (countEl) countEl.textContent = '총 리뷰 ' + total.toLocaleString('ko-KR') + '개';
+    var allCnt = raw.filter(function(r){ return r && belongs(r, group); }).length;   // 별점 무관 전체 (상단 합산과 같은 기준)
+    if (countEl) countEl.textContent = '스마트스토어 리뷰 ' + allCnt.toLocaleString('ko-KR') + '개';
     track.innerHTML = '';
     slidesEls = list.map(buildSlide);
     slidesEls.forEach(function(s){ track.appendChild(s); });
@@ -165,6 +166,120 @@
     root.style.display = '';
     idx = 0; renderDots(slidesEls.length); goTo(0);
     renderAllButton(allList);
+  }
+
+  /* ====== 리뷰 숫자 합산 (자사몰 + 스마트스토어) : 상단 요약 · 리뷰 탭 · 리뷰 요약 박스 ====== */
+  // 자사몰 수치는 페이지 로드 시점(서버가 그린 리뷰 요약 박스)에서 한 번만 읽는다 → 중복 합산 방지
+  var BASE = null;
+  function readBase(){
+    var hl = document.querySelector('#prdReview .review_highlight');
+    var n = 0, avg = null, dist = [0, 0, 0, 0, 0, 0];
+    var numEl = hl && hl.querySelector('.review__total .num');
+    if (numEl) n = parseInt(numEl.textContent.replace(/\D/g, ''), 10) || 0;
+    else {
+      var c = document.querySelector('.grp_review .count_review');
+      var m = c && c.textContent.match(/(\d[\d,]*)/); n = m ? parseInt(m[1].replace(/,/g, ''), 10) : 0;
+    }
+    var rt = hl && hl.querySelector('.review__rating .rate');
+    var a = rt ? parseFloat(rt.textContent) : NaN; if (!isNaN(a)) avg = a;
+    for (var k = 1; k <= 5; k++) {
+      var pe = hl && hl.querySelector('.review__graph .rate' + k + ' .txt .percentile');
+      var pv = pe ? parseFloat(pe.textContent) : NaN;
+      dist[k] = isNaN(pv) ? 0 : Math.round(pv / 100 * n);
+    }
+    return { n: n, avg: avg, dist: dist };
+  }
+  // 스킨 스크립트가 리뷰 요약(별점/그래프)을 채울 때까지 기다렸다가 자사몰 수치를 한 번만 읽는다
+  function whenBaseReady(cb){
+    var t0 = Date.now();
+    (function poll(){
+      var hl = document.querySelector('#prdReview .review_highlight');
+      var numEl = hl && hl.querySelector('.review__total .num');
+      var n = numEl ? parseInt(numEl.textContent.replace(/\D/g, ''), 10) || 0 : 0;
+      var filled = !n || [1,2,3,4,5].some(function(k){ var e = hl.querySelector('.review__graph .rate' + k + ' .txt .percentile'); return e && /\d/.test(e.textContent); });
+      var topReady = !n || document.querySelector('.grp_review point');
+      if ((filled && topReady) || Date.now() - t0 > 6000) { BASE = readBase(); cb(); }
+      else setTimeout(poll, 250);
+    })();
+  }
+
+  function updateCounts(raw, group){
+    if (!BASE) return whenBaseReady(function(){ updateCounts(raw, group); });
+    var nv = raw.filter(function(r){ return r && belongs(r, group); });           // 별점 무관 전체
+    if (!nv.length) return;
+    var nvDist = [0, 0, 0, 0, 0, 0], nvSum = 0;
+    nv.forEach(function(r){ var x = Math.max(1, Math.min(5, r.rating || 0)); nvDist[x]++; nvSum += x; });
+    var total = BASE.n + nv.length;
+    var avg = Math.round(((BASE.avg != null ? BASE.avg * BASE.n : 0) + nvSum) / (BASE.avg != null ? total : nv.length) * 10) / 10;
+    var label = '자사몰 ' + BASE.n.toLocaleString('ko-KR') + '개 + 스마트스토어 ' + nv.length.toLocaleString('ko-KR') + '개';
+    var T = total.toLocaleString('ko-KR');
+
+    function renderTop(){
+      var box = document.querySelector('.grp_review .item_cont a'); if (!box) return '';
+      var cnt = box.querySelector('.count_review'); if (!cnt) return '';
+      var star = box.querySelector('.review-avg');
+      if (star) {
+        var rate = star.querySelector('rate.rating');
+        if (!rate) { rate = document.createElement('rate'); rate.className = 'rating'; star.appendChild(rate); }
+        rate.style.width = Math.min(100, avg / 5 * 100) + '%';
+      }
+      var pts = box.querySelectorAll('point');
+      for (var q = 1; q < pts.length; q++) pts[q].remove();                    // 중복 별점 숫자 제거
+      var pt = pts[0];
+      if (!pt) { pt = document.createElement('point'); cnt.parentNode.insertBefore(pt, cnt); }
+      pt.textContent = avg.toFixed(1);
+      cnt.textContent = '(리뷰 ' + T + '개)'; cnt.title = label;
+      var ul = box.closest('ul'); if (ul) ul.classList.remove('displaynone');
+      return box.textContent;
+    }
+    function renderTab(){
+      document.querySelectorAll('#detailTab .count_review').forEach(function(el){ el.textContent = '(' + T + ')'; el.title = label; });
+      var li = document.querySelector('#detailTab a[href="#prdReview"]'); li = li && li.closest('li'); if (li) li.classList.remove('displaynone');
+    }
+    function renderBox(){
+      var hl = document.querySelector('#prdReview .review_highlight'); if (!hl) return;
+      var num = hl.querySelector('.review__total .num'); if (num) num.textContent = T;
+      var rt = hl.querySelector('.review__rating .rate'); if (rt) rt.textContent = avg.toFixed(1);
+      for (var k = 1; k <= 5; k++) {
+        var pct = Math.round((BASE.dist[k] + nvDist[k]) / total * 100);
+        var g = hl.querySelector('.review__graph .rate' + k);
+        if (!g) continue;
+        var bar = g.querySelector('.gauge .percentile'); if (bar) bar.style.height = pct ? pct + '%' : '';
+        var tx = g.querySelector('.txt .percentile'); if (tx) tx.textContent = pct ? pct + '%' : '-';
+      }
+      var sub = hl.querySelector('.gj-src-note');
+      if (!sub) { sub = document.createElement('p'); sub.className = 'gj-src-note'; sub.style.cssText = 'margin:12px 0 0;text-align:center;font-size:12px;color:#8A8F99'; hl.appendChild(sub); }
+      sub.textContent = label + ' 합산';
+    }
+
+    function snap(){
+      var b1 = document.querySelector('.grp_review .item_cont a'), b2 = document.querySelector('#prdReview .review_highlight');
+      return (b1 ? b1.textContent : '') + '|' + (b2 ? b2.textContent : '') + '|' + (b2 ? [].map.call(b2.querySelectorAll('.gauge .percentile'), function(e){ return e.style.height; }).join(',') : '');
+    }
+    function all(){ renderTop(); renderTab(); renderBox(); }
+    all();
+    var mine = snap();
+    // 스킨 스크립트가 나중에 숫자를 덮어쓰면 다시 적용 (15초간, 최대 8회). 자사몰 수치는 다시 읽지 않음
+    if (window.MutationObserver) {
+      var again = 0;
+      var mo = new MutationObserver(function(){
+        if (snap() !== mine && again < 8) { again++; all(); mine = snap(); }
+      });
+      ['.grp_review', '#prdReview .review_highlight', '#detailTab'].forEach(function(sel){
+        var el = document.querySelector(sel);
+        if (el) mo.observe(el, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style'] });
+      });
+      setTimeout(function(){ mo.disconnect(); }, 15000);
+    }
+  }
+
+  /* ====== 스마트스토어 리뷰 캐러셀을 리뷰 탭 안으로 이동 ====== */
+  function moveIntoReviewTab(){
+    var sec = document.getElementById('prdReview');
+    if (!sec || sec.contains(root)) return;
+    var anchor = sec.querySelector('.review_list_grp') || null;
+    sec.insertBefore(root, anchor);
+    root.style.margin = '28px auto';
   }
 
   /* ====== 전체 리뷰 보기 (모달 목록, 20개씩) ====== */
@@ -191,7 +306,7 @@
     }
     var btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'gjtr-allbtn';
-    btn.innerHTML = '스마트스토어 리뷰 전체 보기 <b>' + allList.length.toLocaleString('ko-KR') + '</b>';
+    btn.innerHTML = '스마트스토어 리뷰 모아보기 <b>' + allList.length.toLocaleString('ko-KR') + '</b><span style="font-weight:500;color:#8A8F99;font-size:12px">(별점 4점 이상)</span>';
     btn.addEventListener('click', function(e){ e.stopPropagation(); openAll(allList); });
     root.appendChild(btn);
   }
@@ -252,6 +367,8 @@
       .then(function(raw){
         if (!Array.isArray(raw)) throw new Error('Invalid JSON');
         applyData(raw, group);
+        updateCounts(raw, group);
+        if (root.style.display !== 'none') { moveIntoReviewTab(); goTo(0); }
         // 스킨의 기존 스크립트(약과 리뷰)가 늦게 끝나 카드를 덮어쓰면 다시 적용 (최대 3회, 20초간)
         var mine = countEl ? countEl.textContent : '', again = 0;
         if (countEl && window.MutationObserver) {
