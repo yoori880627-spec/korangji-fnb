@@ -282,6 +282,99 @@
     root.style.margin = '28px auto';
   }
 
+  /* ====== 리뷰 탭: 스마트스토어 리뷰를 자사몰 리뷰와 같은 마크업/클래스로 표시 ====== */
+  function shortDate(d){ var m = String(d || '').match(/^\d{2}(\d{2})-(\d{2})-(\d{2})/); return m ? m[1] + '.' + m[2] + '.' + m[3] : ''; }
+
+  function renderTabList(raw, group){
+    var sec = document.getElementById('prdReview');
+    var shopGrp = sec && sec.querySelector('.review_list_grp:not(.gj-nv-grp)');
+    if (!sec || !shopGrp) return false;
+    var all = raw.filter(function(r){ return r && belongs(r, group); });
+    var good = all.filter(function(r){ return r.text && (r.rating == null || r.rating >= minRating); })
+                  .sort(function(a, b){ return String(b.date || '').localeCompare(String(a.date || '')); });
+    if (!good.length) return false;
+    var old = sec.querySelector('.gj-nv'); if (old) old.remove();
+    var oldH = sec.querySelector('.gj-shop-h'); if (oldH) oldH.remove();
+
+    if (!document.getElementById('gj-nv-css')) {
+      var st = document.createElement('style'); st.id = 'gj-nv-css';
+      st.textContent =
+        '#prdReview .gj-sub-h{display:flex;align-items:baseline;gap:8px;margin:40px 0 0;padding-bottom:14px;border-bottom:1px solid #111}' +
+        '#prdReview .gj-sub-h strong{font-size:17px;font-weight:700;color:#000}' +
+        '#prdReview .gj-sub-h span{font-size:12px;color:#999}' +
+        '#prdReview .gj-nv .gj-src{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:3px;background:#03C75A;color:#fff;font-size:11px;font-weight:600;vertical-align:1px}' +
+        '#prdReview .gj-nv .cont.gj-open{display:block;-webkit-line-clamp:unset;max-height:none}' +
+        '#prdReview .gj-nv .gj-morebox{text-align:center;margin:24px 0 8px}' +
+        '#prdReview .gj-nv .gj-morebox .btnNormalFix{cursor:pointer}' +
+        '@media (max-width:767px){#prdReview .gj-sub-h{display:block;margin-top:28px}#prdReview .gj-sub-h strong{display:block;font-size:15px}#prdReview .gj-sub-h span{display:block;margin-top:4px}}';
+      document.head.appendChild(st);
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'gj-nv';
+    wrap.innerHTML =
+      '<div class="gj-sub-h"><strong>스마트스토어 리뷰 ' + all.length.toLocaleString('ko-KR') + '개</strong><span>네이버 스마트스토어 구매자 리뷰 · 별점 4점 이상 최신순</span></div>' +
+      '<div class="review_list_grp gj-nv-grp"><div class="review__list"><ul class="wp-review-list gj-nv-list"></ul></div></div>' +
+      '<div class="gj-morebox ec-base-button"></div>';
+    var ul = wrap.querySelector('.gj-nv-list'), moreBox = wrap.querySelector('.gj-morebox');
+    var shown = 0, FIRST = 5, STEP = 10;
+
+    function item(r){
+      var li = document.createElement('li');
+      var n = Math.max(1, Math.min(5, parseInt(r.rating, 10) || 5));
+      li.innerHTML =
+        '<div class="item"><div class="chk"></div>' +
+          '<div class="content">' +
+            '<div class="rate rate' + n + '">' + n + '.0</div>' +
+            '<div class="cont clamp">' + esc(r.text).replace(/\n/g, '<br>') + '</div>' +
+            '<div class="cont__more gj-more displaynone">더보기 <span class="arrow"></span></div>' +
+          '</div>' +
+          '<div class="content_right">' +
+            '<div class="member">' + esc(r.author || '익명') + '</div>' +
+            '<div class="date">' + shortDate(r.date) + '</div>' +
+            '<div class="hit"><span class="gj-src">N 스마트스토어</span></div>' +
+          '</div>' +
+        '</div>';
+      var more = li.querySelector('.gj-more'), cont = li.querySelector('.cont');
+      more.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        var open = cont.classList.toggle('gj-open');
+        more.firstChild.nodeValue = open ? '접기 ' : '더보기 ';
+      });
+      return li;
+    }
+    function fixMore(lis){
+      requestAnimationFrame(function(){
+        lis.forEach(function(li){
+          var c = li.querySelector('.cont'), m = li.querySelector('.gj-more');
+          if (c && m) m.classList.toggle('displaynone', c.scrollHeight <= c.clientHeight + 2);
+        });
+      });
+    }
+    function next(){
+      var batch = good.slice(shown, shown + (shown ? STEP : FIRST)).map(item);
+      batch.forEach(function(li){ ul.appendChild(li); });
+      shown += batch.length;
+      fixMore(batch);
+      moreBox.innerHTML = '';
+      if (shown < good.length) {
+        var b = document.createElement('a');
+        b.href = '#none'; b.className = 'btnNormalFix sizeM';
+        b.textContent = '스마트스토어 리뷰 더보기 (' + shown + ' / ' + good.length + ')';
+        b.addEventListener('click', function(e){ e.preventDefault(); next(); });
+        moreBox.appendChild(b);
+      }
+    }
+    next();
+
+    var shopH = document.createElement('div');
+    shopH.className = 'gj-sub-h gj-shop-h';
+    shopH.innerHTML = '<strong>자사몰 리뷰 ' + (BASE ? BASE.n : 0).toLocaleString('ko-KR') + '개</strong><span>꼬랑지 공식몰 구매자 리뷰</span>';
+    sec.insertBefore(wrap, shopGrp);
+    if (BASE && BASE.n > 0) sec.insertBefore(shopH, shopGrp);
+    return true;
+  }
+
   /* ====== 전체 리뷰 보기 (모달 목록, 20개씩) ====== */
   var ALL_CSS = '' +
     '.gjtr-allbtn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;max-width:420px;margin:14px auto 0;height:46px;border-radius:999px;border:1px solid #E2E5EB;background:#fff;color:#0F1012;font:600 14px/1 inherit;cursor:pointer}' +
@@ -367,8 +460,10 @@
       .then(function(raw){
         if (!Array.isArray(raw)) throw new Error('Invalid JSON');
         applyData(raw, group);
-        updateCounts(raw, group);
-        if (root.style.display !== 'none') { moveIntoReviewTab(); goTo(0); }
+        whenBaseReady(function(){
+          updateCounts(raw, group);
+          if (renderTabList(raw, group)) root.style.display = 'none';   // 리뷰 탭에 자사몰과 같은 디자인으로 표시 → 캐러셀은 숨김
+        });
         // 스킨의 기존 스크립트(약과 리뷰)가 늦게 끝나 카드를 덮어쓰면 다시 적용 (최대 3회, 20초간)
         var mine = countEl ? countEl.textContent : '', again = 0;
         if (countEl && window.MutationObserver) {
