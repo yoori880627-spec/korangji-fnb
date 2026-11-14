@@ -398,7 +398,6 @@
       ai.innerHTML =
         '<div class="gjr-ai-h"><span class="gjr-tag">리뷰 요약</span><small>스마트스토어 리뷰 ' + gi.review_count.toLocaleString('ko-KR') + '개 분석</small></div>' +
         '<p class="s">' + esc(gi.summary) + '</p>' +
-        (gi.caution ? '<p class="c"><b>참고</b>' + esc(gi.caution) + '</p>' : '') +
         (gi.personas && gi.personas.length ? '<h4>이런 분들이 많이 구매했어요</h4><div class="gjr-chips">' +
           gi.personas.map(function(p){ return '<span class="gjr-chip">' + esc(p.label) + '<em>' + p.count + '</em></span>'; }).join('') + '</div>' : '') +
         (themeList.length ? '<h4>키워드로 리뷰 보기</h4><div class="gjr-chips gjr-keys">' +

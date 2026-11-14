@@ -1,6 +1,7 @@
 """스마트스토어 리뷰 → 상품군별 'AI 리뷰 요약' 데이터(reviews/insights.json) 생성.
 
-- summary / caution : 리뷰 원문을 읽고 작성한 요약 문장 (리뷰 갱신 시 함께 검토·수정)
+- summary : 리뷰 원문을 읽고 작성한 요약 문장 (리뷰 갱신 시 함께 검토·수정)
+- caution : 내부 참고용 아쉬운 점 (쇼핑몰에는 표시하지 않음, insights.json 에도 넣지 않음)
 - 키워드/추천 대상 수치 : 이 스크립트가 리뷰 원문에서 직접 세어 계산 (과장 없음)
 
 실행: python3 tools/build_insights.py
@@ -100,7 +101,6 @@ def main():
         out['groups'][name] = {
             'review_count': len(rs),
             'summary': s,
-            'caution': c,
             'personas': persona_counts,
             'themes': [t for t in theme_counts if t['count'] >= 2],
         }
