@@ -24,13 +24,13 @@
   var root = document.getElementById('gj-text-reels'); if (!root) return;
   if (root.getAttribute('data-gj-groups') === '1') return;   // 중복 실행 방지
   root.setAttribute('data-gj-groups', '1');
-  root.setAttribute('data-json', window.GJ_REVIEWS_JSON || 'https://cdn.jsdelivr.net/gh/yoori880627-spec/korangji-fnb@cafe24-scripts/reviews/naverReviews.json');
+  root.setAttribute('data-json', window.GJ_REVIEWS_JSON || 'https://cdn.jsdelivr.net/gh/yoori880627-spec/korangji-fnb@0f96050ca77433c3e1adec42a0c127261154c81b/reviews/naverReviews.json');
   root.setAttribute('data-limit', '30');        // 상품당 최신 30개
   root.setAttribute('data-min-rating', '4');    // 별점 4점 이상만
   root.style.display = 'none';
   var oldMsg = root.querySelectorAll('p'); oldMsg.forEach(function(p){ if (/리뷰/.test(p.textContent) && !p.closest('.gjtr-head')) p.remove(); });
 
-  var INSIGHTS_URL = window.GJ_INSIGHTS_JSON || 'https://cdn.jsdelivr.net/gh/yoori880627-spec/korangji-fnb@cafe24-scripts/reviews/insights.json';
+  var INSIGHTS_URL = window.GJ_INSIGHTS_JSON || 'https://cdn.jsdelivr.net/gh/yoori880627-spec/korangji-fnb@0f96050ca77433c3e1adec42a0c127261154c81b/reviews/insights.json';
   var jsonUrl   = root.getAttribute('data-json');
   var limit     = Math.min(Math.max(parseInt(root.getAttribute('data-limit') || '200', 10), 1), 1000);
   var minRating = parseInt(root.getAttribute('data-min-rating') || '1', 10);
