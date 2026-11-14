@@ -30,6 +30,7 @@
   root.style.display = 'none';
   var oldMsg = root.querySelectorAll('p'); oldMsg.forEach(function(p){ if (/리뷰/.test(p.textContent) && !p.closest('.gjtr-head')) p.remove(); });
 
+  var INSIGHTS_URL = window.GJ_INSIGHTS_JSON || 'https://cdn.jsdelivr.net/gh/yoori880627-spec/korangji-fnb@cafe24-scripts/reviews/insights.json';
   var jsonUrl   = root.getAttribute('data-json');
   var limit     = Math.min(Math.max(parseInt(root.getAttribute('data-limit') || '200', 10), 1), 1000);
   var minRating = parseInt(root.getAttribute('data-min-rating') || '1', 10);
@@ -232,31 +233,15 @@
       var ul = box.closest('ul'); if (ul) ul.classList.remove('displaynone');
       return box.textContent;
     }
-    function renderTab(){
+    function renderTabLabel(){
       document.querySelectorAll('#detailTab .count_review').forEach(function(el){ el.textContent = '(' + T + ')'; el.title = label; });
       var li = document.querySelector('#detailTab a[href="#prdReview"]'); li = li && li.closest('li'); if (li) li.classList.remove('displaynone');
     }
-    function renderBox(){
-      var hl = document.querySelector('#prdReview .review_highlight'); if (!hl) return;
-      var num = hl.querySelector('.review__total .num'); if (num) num.textContent = T;
-      var rt = hl.querySelector('.review__rating .rate'); if (rt) rt.textContent = avg.toFixed(1);
-      for (var k = 1; k <= 5; k++) {
-        var pct = Math.round((BASE.dist[k] + nvDist[k]) / total * 100);
-        var g = hl.querySelector('.review__graph .rate' + k);
-        if (!g) continue;
-        var bar = g.querySelector('.gauge .percentile'); if (bar) bar.style.height = pct ? pct + '%' : '';
-        var tx = g.querySelector('.txt .percentile'); if (tx) tx.textContent = pct ? pct + '%' : '-';
-      }
-      var sub = hl.querySelector('.gj-src-note');
-      if (!sub) { sub = document.createElement('p'); sub.className = 'gj-src-note'; sub.style.cssText = 'margin:12px 0 0;text-align:center;font-size:12px;color:#8A8F99'; hl.appendChild(sub); }
-      sub.textContent = label + ' 합산';
-    }
-
     function snap(){
-      var b1 = document.querySelector('.grp_review .item_cont a'), b2 = document.querySelector('#prdReview .review_highlight');
-      return (b1 ? b1.textContent : '') + '|' + (b2 ? b2.textContent : '') + '|' + (b2 ? [].map.call(b2.querySelectorAll('.gauge .percentile'), function(e){ return e.style.height; }).join(',') : '');
+      var b1 = document.querySelector('.grp_review .item_cont a'), b2 = document.querySelector('#detailTab');
+      return (b1 ? b1.textContent : '') + '|' + (b2 ? b2.textContent : '');
     }
-    function all(){ renderTop(); renderTab(); renderBox(); }
+    function all(){ renderTop(); renderTabLabel(); }
     all();
     var mine = snap();
     // 스킨 스크립트가 나중에 숫자를 덮어쓰면 다시 적용 (15초간, 최대 8회). 자사몰 수치는 다시 읽지 않음
@@ -265,59 +250,173 @@
       var mo = new MutationObserver(function(){
         if (snap() !== mine && again < 8) { again++; all(); mine = snap(); }
       });
-      ['.grp_review', '#prdReview .review_highlight', '#detailTab'].forEach(function(sel){
+      ['.grp_review', '#detailTab'].forEach(function(sel){
         var el = document.querySelector(sel);
         if (el) mo.observe(el, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['style'] });
       });
       setTimeout(function(){ mo.disconnect(); }, 15000);
     }
+    var dist = [0, 0, 0, 0, 0, 0];
+    for (var k = 1; k <= 5; k++) dist[k] = BASE.dist[k] + nvDist[k];
+    return { total: total, avg: avg, dist: dist, shopCount: BASE.n, nvCount: nv.length };
   }
 
-  /* ====== 스마트스토어 리뷰 캐러셀을 리뷰 탭 안으로 이동 ====== */
-  function moveIntoReviewTab(){
-    var sec = document.getElementById('prdReview');
-    if (!sec || sec.contains(root)) return;
-    var anchor = sec.querySelector('.review_list_grp') || null;
-    sec.insertBefore(root, anchor);
-    root.style.margin = '28px auto';
-  }
-
-  /* ====== 리뷰 탭: 스마트스토어 리뷰를 자사몰 리뷰와 같은 마크업/클래스로 표시 ====== */
+  /* ====== 리뷰 탭 UI: 요약 · AI 리뷰 요약 · 키워드 필터 · 스마트스토어 리뷰 목록 ======
+   * - 스마트스토어 리뷰는 자사몰 리뷰와 같은 마크업/클래스로 그려 두 목록의 모양을 통일
+   * - 자사몰 리뷰 목록도 아래 CSS 로 같은 스타일을 입힘 (스킨 파일은 수정하지 않음)
+   */
   function shortDate(d){ var m = String(d || '').match(/^\d{2}(\d{2})-(\d{2})-(\d{2})/); return m ? m[1] + '.' + m[2] + '.' + m[3] : ''; }
 
-  function renderTabList(raw, group){
+  var GJR_CSS = '' +
+    '#prdReview.gjr-on .review_highlight{display:none!important}' +
+    /* 요약 카드 */
+    '#prdReview .gjr-sum{display:flex;align-items:center;gap:28px;margin:8px 0 0;padding:24px 0 28px;border-bottom:1px solid #F0F0F2}' +
+    '#prdReview .gjr-score{min-width:150px}' +
+    '#prdReview .gjr-avg{font-size:44px;font-weight:700;line-height:1;letter-spacing:-1px;color:#111}' +
+    '#prdReview .gjr-stars{position:relative;display:inline-block;margin-top:10px;font-size:16px;letter-spacing:2px;color:#E3E3E6;line-height:1}' +
+    '#prdReview .gjr-stars i{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#F94830;font-style:normal}' +
+    '#prdReview .gjr-cnt{margin-top:8px;font-size:13px;color:#767676}' +
+    '#prdReview .gjr-bars{flex:1;max-width:420px}' +
+    '#prdReview .gjr-bar{display:flex;align-items:center;gap:10px;margin:5px 0;font-size:12px;color:#767676}' +
+    '#prdReview .gjr-bar b{width:26px;font-weight:500}' +
+    '#prdReview .gjr-bar span{flex:1;height:6px;border-radius:6px;background:#F0F0F2;overflow:hidden}' +
+    '#prdReview .gjr-bar span i{display:block;height:100%;border-radius:6px;background:#222}' +
+    '#prdReview .gjr-bar em{width:34px;text-align:right;font-style:normal}' +
+    '#prdReview .gjr-write{margin-left:auto;align-self:flex-start;display:inline-flex;align-items:center;height:40px;padding:0 18px;border:1px solid #DDDDE1;border-radius:999px;font-size:13px;font-weight:600;color:#111!important;background:#fff;white-space:nowrap}' +
+    /* AI 요약 카드 */
+    '#prdReview .gjr-ai{margin:24px 0 0;padding:22px 24px;border-radius:16px;background:#F6F7F9}' +
+    '#prdReview .gjr-ai-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}' +
+    '#prdReview .gjr-tag{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#111}' +
+    '#prdReview .gjr-tag:before{content:"AI";display:inline-block;padding:2px 6px;border-radius:5px;background:#111;color:#fff;font-size:10px;font-weight:700;letter-spacing:.3px}' +
+    '#prdReview .gjr-ai-h small{font-size:12px;color:#8B8B93}' +
+    '#prdReview .gjr-ai p.s{margin:0;font-size:15px;line-height:1.7;color:#222;word-break:keep-all}' +
+    '#prdReview .gjr-ai p.c{margin:10px 0 0;font-size:13.5px;line-height:1.6;color:#555;word-break:keep-all}' +
+    '#prdReview .gjr-ai p.c b{margin-right:6px;color:#111;font-weight:600}' +
+    '#prdReview .gjr-ai h4{margin:20px 0 10px;font-size:13px;font-weight:700;color:#111}' +
+    '#prdReview .gjr-chips{display:flex;flex-wrap:wrap;gap:8px}' +
+    '#prdReview .gjr-chip{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:999px;border:1px solid #E3E3E8;background:#fff;font:500 13px/1 inherit;color:#222;cursor:default}' +
+    '#prdReview .gjr-chip em{font-style:normal;font-size:12px;color:#8B8B93}' +
+    '#prdReview button.gjr-chip{cursor:pointer;transition:background .15s,border-color .15s}' +
+    '#prdReview button.gjr-chip:hover{border-color:#B9B9C0}' +
+    '#prdReview button.gjr-chip[aria-pressed="true"]{background:#111;border-color:#111;color:#fff}' +
+    '#prdReview button.gjr-chip[aria-pressed="true"] em{color:#C9C9CF}' +
+    '#prdReview .gjr-note{margin:16px 0 0;font-size:11.5px;color:#9A9AA1}' +
+    /* 목록 헤더 */
+    '#prdReview .gjr-lh{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:44px 0 0;padding-bottom:14px;border-bottom:1px solid #111}' +
+    '#prdReview .gjr-lh strong{font-size:17px;font-weight:700;color:#111}' +
+    '#prdReview .gjr-lh span{font-size:12px;color:#8B8B93}' +
+    '#prdReview .gjr-filter{display:none;align-items:center;gap:6px;height:28px;padding:0 10px 0 12px;border-radius:999px;background:#111;color:#fff;font-size:12px;border:0;cursor:pointer}' +
+    '#prdReview .gjr-filter.on{display:inline-flex}' +
+    '#prdReview .gjr-empty{padding:40px 0;text-align:center;font-size:14px;color:#8B8B93}' +
+    /* 리뷰 아이템 (자사몰 + 스마트스토어 공통) */
+    '#prdReview .review_list_grp .review__list>ul>li .item{display:block!important;padding:22px 0!important;border-bottom:1px solid #F0F0F2!important;border-top:0!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .content{width:auto!important;padding:0!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .item:after,#prdReview .review_list_grp .review__list>ul>li .item:before{display:none!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .rate{position:static!important;top:auto!important;left:auto!important;right:auto!important;bottom:auto!important;display:block!important;font-size:13px!important;height:auto!important;margin:0 0 10px!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .content .cont{font-size:15px!important;line-height:1.65!important;color:#222!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .content .cont.clamp{max-height:4.95em!important;-webkit-line-clamp:3!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .content .cont.gj-open{max-height:none!important;-webkit-line-clamp:unset!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .cont__more{margin-top:6px;font-size:12.5px!important;color:#767676!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .thumb-attach img,#prdReview .review_list_grp .review__list>ul>li .thumb-attach span{border-radius:10px!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .content_right{display:flex!important;flex-wrap:wrap;align-items:center;gap:0;width:auto!important;margin:12px 0 0!important;padding:0!important;border:0!important;text-align:left!important;position:static!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .content_right>div{display:inline-flex!important;align-items:center;margin:0!important;padding:0!important;border:0!important;font-size:12.5px!important;color:#8B8B93!important;line-height:1.4!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .content_right>div:before{display:none!important}' +
+    '#prdReview .review_list_grp .review__list>ul>li .content_right>div+div:before{content:""!important;display:inline-block!important;width:1px;height:10px;margin:0 8px;background:#DDDDE1;position:static!important}' +
+    '#prdReview .review_list_grp:not(.gj-nv-grp) .review__list>ul>li .content_right .hit,#prdReview .review_list_grp:not(.gj-nv-grp) .review__list>ul>li .content_right .vote{display:none!important}' +
+    '#prdReview .gj-src{display:inline-block;padding:0 5px;border-radius:3px;background:#E8F8EE;color:#0A8F3C;font-size:10.5px;font-weight:600;line-height:16px}' +
+    '#prdReview mark.gjr-hl{background:#FFF0B3;color:inherit;padding:0 1px;border-radius:2px}' +
+    /* 더보기 버튼 */
+    '#prdReview .gjr-more{display:flex;justify-content:center;margin:24px 0 8px}' +
+    '#prdReview .gjr-more button{height:44px;min-width:240px;padding:0 24px;border-radius:999px;border:1px solid #DDDDE1;background:#fff;font:600 13.5px/1 inherit;color:#111;cursor:pointer}' +
+    '#prdReview .gjr-more button:hover{border-color:#B9B9C0}' +
+    '@media (max-width:767px){' +
+      '#prdReview .gjr-sum{flex-wrap:wrap;gap:20px;padding:20px 0 24px}' +
+      '#prdReview .gjr-score{min-width:0}' +
+      '#prdReview .gjr-avg{font-size:38px}' +
+      '#prdReview .gjr-bars{flex:1 1 180px}' +
+      '#prdReview .gjr-write{order:3;width:100%;justify-content:center;margin:0}' +
+      '#prdReview .gjr-ai{padding:20px 18px;border-radius:14px}' +
+      '#prdReview .gjr-ai-h{flex-wrap:wrap}' +
+      '#prdReview .gjr-ai p.s{font-size:14.5px}' +
+      '#prdReview .gjr-lh{margin-top:36px}' +
+      '#prdReview .gjr-lh strong{font-size:16px}' +
+    '}';
+
+  function starsHtml(avg){
+    return '<span class="gjr-stars" aria-label="별점 ' + avg.toFixed(1) + '점">★★★★★<i style="width:' + Math.min(100, avg / 5 * 100) + '%">★★★★★</i></span>';
+  }
+
+  function hl(text, re){
+    var safe = esc(text).replace(/\n/g, '<br>');
+    if (!re) return safe;
+    try { return safe.replace(new RegExp('(' + re + ')', 'g'), '<mark class="gjr-hl">$1</mark>'); } catch (e) { return safe; }
+  }
+
+  function renderTab(raw, group, stats, gi, themes){
     var sec = document.getElementById('prdReview');
     var shopGrp = sec && sec.querySelector('.review_list_grp:not(.gj-nv-grp)');
-    if (!sec || !shopGrp) return false;
+    if (!sec || !shopGrp || !stats) return false;
     var all = raw.filter(function(r){ return r && belongs(r, group); });
-    var good = all.filter(function(r){ return r.text && (r.rating == null || r.rating >= minRating); })
+    var pool = all.filter(function(r){ return r.text && (r.rating == null || r.rating >= minRating); })
                   .sort(function(a, b){ return String(b.date || '').localeCompare(String(a.date || '')); });
-    if (!good.length) return false;
-    var old = sec.querySelector('.gj-nv'); if (old) old.remove();
-    var oldH = sec.querySelector('.gj-shop-h'); if (oldH) oldH.remove();
+    if (!pool.length) return false;
 
-    if (!document.getElementById('gj-nv-css')) {
-      var st = document.createElement('style'); st.id = 'gj-nv-css';
-      st.textContent =
-        '#prdReview .gj-sub-h{display:flex;align-items:baseline;gap:8px;margin:40px 0 0;padding-bottom:14px;border-bottom:1px solid #111}' +
-        '#prdReview .gj-sub-h strong{font-size:17px;font-weight:700;color:#000}' +
-        '#prdReview .gj-sub-h span{font-size:12px;color:#999}' +
-        '#prdReview .gj-nv .gj-src{display:inline-block;margin-left:2px;padding:0 4px;border-radius:2px;background:#03C75A;color:#fff;font-size:9px;line-height:14px;font-weight:600;letter-spacing:-.2px;vertical-align:1px}' +
-        '#prdReview .gj-nv .cont.gj-open{display:block;-webkit-line-clamp:unset;max-height:none}' +
-        '#prdReview .gj-nv .gj-morebox{text-align:center;margin:24px 0 8px}' +
-        '#prdReview .gj-nv .gj-morebox .btnNormalFix{cursor:pointer}' +
-        '@media (max-width:767px){#prdReview .gj-sub-h{display:block;margin-top:28px}#prdReview .gj-sub-h strong{display:block;font-size:15px}#prdReview .gj-sub-h span{display:block;margin-top:4px}}';
-      document.head.appendChild(st);
+    if (!document.getElementById('gjr-css')) {
+      var st = document.createElement('style'); st.id = 'gjr-css'; st.textContent = GJR_CSS; document.head.appendChild(st);
+    }
+    ['.gjr-sum', '.gjr-ai', '.gj-nv', '.gj-shop-h'].forEach(function(sel){ var o = sec.querySelector(sel); if (o) o.remove(); });
+    sec.classList.add('gjr-on');
+
+    /* --- 1) 별점 요약 --- */
+    var hlBox = sec.querySelector('.review_highlight');
+    var writeA = hlBox && hlBox.querySelector('.review__writing a');
+    var sum = document.createElement('div');
+    sum.className = 'gjr-sum';
+    var bars = '';
+    for (var k = 5; k >= 1; k--) {
+      var pct = stats.total ? Math.round(stats.dist[k] / stats.total * 100) : 0;
+      bars += '<div class="gjr-bar"><b>' + k + '점</b><span><i style="width:' + pct + '%"></i></span><em>' + pct + '%</em></div>';
+    }
+    sum.innerHTML =
+      '<div class="gjr-score"><div class="gjr-avg">' + stats.avg.toFixed(1) + '</div>' + starsHtml(stats.avg) +
+        '<div class="gjr-cnt">리뷰 ' + stats.total.toLocaleString('ko-KR') + '개</div></div>' +
+      '<div class="gjr-bars">' + bars + '</div>' +
+      (writeA ? '<a class="gjr-write" href="' + esc(writeA.getAttribute('href')) + '">리뷰 작성하기</a>' : '');
+    if (hlBox) hlBox.parentNode.insertBefore(sum, hlBox.nextSibling); else sec.insertBefore(sum, shopGrp);
+
+    /* --- 2) AI 리뷰 요약 --- */
+    var activeRe = null, activeLabel = '';
+    var themeList = (themes || []).map(function(t){
+      var n = pool.filter(function(r){ try { return new RegExp(t.re).test(r.text); } catch (e) { return false; } }).length;
+      return { label: t.label, re: t.re, count: n };
+    }).filter(function(t){ return t.count >= 2; }).sort(function(a, b){ return b.count - a.count; }).slice(0, 8);
+
+    var ai = null;
+    if (gi) {
+      ai = document.createElement('div');
+      ai.className = 'gjr-ai';
+      ai.innerHTML =
+        '<div class="gjr-ai-h"><span class="gjr-tag">리뷰 요약</span><small>스마트스토어 리뷰 ' + gi.review_count.toLocaleString('ko-KR') + '개 분석</small></div>' +
+        '<p class="s">' + esc(gi.summary) + '</p>' +
+        (gi.caution ? '<p class="c"><b>참고</b>' + esc(gi.caution) + '</p>' : '') +
+        (gi.personas && gi.personas.length ? '<h4>이런 분들이 많이 구매했어요</h4><div class="gjr-chips">' +
+          gi.personas.map(function(p){ return '<span class="gjr-chip">' + esc(p.label) + '<em>' + p.count + '</em></span>'; }).join('') + '</div>' : '') +
+        (themeList.length ? '<h4>키워드로 리뷰 보기</h4><div class="gjr-chips gjr-keys">' +
+          themeList.map(function(t, i){ return '<button type="button" class="gjr-chip" aria-pressed="false" data-i="' + i + '">' + esc(t.label) + '<em>' + t.count + '</em></button>'; }).join('') + '</div>' : '') +
+        '<p class="gjr-note">구매자 리뷰를 AI가 요약한 내용이에요. 숫자는 해당 키워드가 언급된 리뷰 수예요.</p>';
+      sum.parentNode.insertBefore(ai, sum.nextSibling);
     }
 
+    /* --- 3) 스마트스토어 리뷰 목록 --- */
     var wrap = document.createElement('div');
     wrap.className = 'gj-nv';
     wrap.innerHTML =
-      '<div class="gj-sub-h"><strong>스마트스토어 리뷰 ' + all.length.toLocaleString('ko-KR') + '개</strong><span>네이버 스마트스토어 구매자 리뷰 · 별점 4점 이상 최신순</span></div>' +
+      '<div class="gjr-lh"><strong>스마트스토어 리뷰 ' + all.length.toLocaleString('ko-KR') + '개</strong><span>별점 4점 이상 · 최신순</span>' +
+        '<button type="button" class="gjr-filter" aria-label="키워드 필터 해제"></button></div>' +
       '<div class="review_list_grp gj-nv-grp"><div class="review__list"><ul class="wp-review-list gj-nv-list"></ul></div></div>' +
-      '<div class="gj-morebox ec-base-button"></div>';
-    var ul = wrap.querySelector('.gj-nv-list'), moreBox = wrap.querySelector('.gj-morebox');
-    var shown = 0, FIRST = 5, STEP = 10;
+      '<div class="gjr-more"></div>';
+    var ul = wrap.querySelector('.gj-nv-list'), moreBox = wrap.querySelector('.gjr-more'), filterBtn = wrap.querySelector('.gjr-filter');
+    var list = pool, shown = 0, FIRST = 5, STEP = 10;
 
     function item(r){
       var li = document.createElement('li');
@@ -326,20 +425,20 @@
         '<div class="item"><div class="chk"></div>' +
           '<div class="content">' +
             '<div class="rate rate' + n + '">' + n + '.0</div>' +
-            '<div class="cont clamp">' + esc(r.text).replace(/\n/g, '<br>') + '</div>' +
-            '<div class="cont__more gj-more displaynone">더보기 <span class="arrow"></span></div>' +
+            '<div class="cont clamp">' + hl(r.text, activeRe) + '</div>' +
+            '<div class="cont__more gj-more displaynone">더보기</div>' +
           '</div>' +
           '<div class="content_right">' +
             '<div class="member">' + esc(r.author || '익명') + '</div>' +
             '<div class="date">' + shortDate(r.date) + '</div>' +
-            '<div class="hit"><span class="gj-src">N 스마트스토어</span></div>' +
+            '<div class="hit"><span class="gj-src">스마트스토어</span></div>' +
           '</div>' +
         '</div>';
       var more = li.querySelector('.gj-more'), cont = li.querySelector('.cont');
       more.addEventListener('click', function(e){
         e.preventDefault(); e.stopPropagation();
         var open = cont.classList.toggle('gj-open');
-        more.firstChild.nodeValue = open ? '접기 ' : '더보기 ';
+        more.textContent = open ? '접기' : '더보기';
       });
       return li;
     }
@@ -352,28 +451,63 @@
       });
     }
     function next(){
-      var batch = good.slice(shown, shown + (shown ? STEP : FIRST)).map(item);
+      var batch = list.slice(shown, shown + (shown ? STEP : FIRST)).map(item);
       batch.forEach(function(li){ ul.appendChild(li); });
       shown += batch.length;
       fixMore(batch);
       moreBox.innerHTML = '';
-      if (shown < good.length) {
-        var b = document.createElement('a');
-        b.href = '#none'; b.className = 'btnNormalFix sizeM';
-        b.textContent = '스마트스토어 리뷰 더보기 (' + shown + ' / ' + good.length + ')';
-        b.addEventListener('click', function(e){ e.preventDefault(); next(); });
+      if (shown < list.length) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = '리뷰 더보기 (' + shown + ' / ' + list.length + ')';
+        b.addEventListener('click', next);
         moreBox.appendChild(b);
       }
     }
-    next();
+    function reset(){
+      ul.innerHTML = ''; shown = 0;
+      if (!list.length) { ul.innerHTML = '<li class="gjr-empty">해당 키워드가 포함된 리뷰가 없어요.</li>'; moreBox.innerHTML = ''; return; }
+      next();
+    }
+    function setFilter(t, btn){
+      var keys = ai ? ai.querySelectorAll('.gjr-keys .gjr-chip') : [];
+      var same = t && activeLabel === t.label;
+      [].forEach.call(keys, function(k){ k.setAttribute('aria-pressed', 'false'); });
+      if (!t || same) {
+        activeRe = null; activeLabel = ''; list = pool;
+        filterBtn.classList.remove('on');
+      } else {
+        activeRe = t.re; activeLabel = t.label;
+        list = pool.filter(function(r){ try { return new RegExp(t.re).test(r.text); } catch (e) { return false; } });
+        if (btn) btn.setAttribute('aria-pressed', 'true');
+        filterBtn.textContent = '‘' + t.label + '’ 리뷰 ' + list.length + '개  ✕';
+        filterBtn.classList.add('on');
+      }
+      reset();
+    }
+    filterBtn.addEventListener('click', function(){ setFilter(null); });
+    if (ai) {
+      [].forEach.call(ai.querySelectorAll('.gjr-keys .gjr-chip'), function(btn){
+        btn.addEventListener('click', function(){
+          setFilter(themeList[+btn.getAttribute('data-i')], btn);
+          var hd = document.getElementById('header'), tab = document.querySelector('.ec-base-tab .menu-inner');
+          var off = (tab ? tab.offsetHeight : 0) + 12;
+          window.scrollTo({ top: wrap.getBoundingClientRect().top + window.pageYOffset - off, behavior: 'smooth' });
+        });
+      });
+    }
+    reset();
 
-    var shopH = document.createElement('div');
-    shopH.className = 'gj-sub-h gj-shop-h';
-    shopH.innerHTML = '<strong>자사몰 리뷰 ' + (BASE ? BASE.n : 0).toLocaleString('ko-KR') + '개</strong><span>꼬랑지 공식몰 구매자 리뷰</span>';
     sec.insertBefore(wrap, shopGrp);
-    if (BASE && BASE.n > 0) sec.insertBefore(shopH, shopGrp);
+    if (stats.shopCount > 0) {
+      var shopH = document.createElement('div');
+      shopH.className = 'gjr-lh gj-shop-h';
+      shopH.innerHTML = '<strong>자사몰 리뷰 ' + stats.shopCount.toLocaleString('ko-KR') + '개</strong><span>꼬랑지 공식몰 구매자 리뷰</span>';
+      sec.insertBefore(shopH, shopGrp);
+    }
     return true;
   }
+
 
   /* ====== 전체 리뷰 보기 (모달 목록, 20개씩) ====== */
   var ALL_CSS = '' +
@@ -460,9 +594,13 @@
       .then(function(raw){
         if (!Array.isArray(raw)) throw new Error('Invalid JSON');
         applyData(raw, group);
+        var insP = fetch(INSIGHTS_URL).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
         whenBaseReady(function(){
-          updateCounts(raw, group);
-          if (renderTabList(raw, group)) root.style.display = 'none';   // 리뷰 탭에 자사몰과 같은 디자인으로 표시 → 캐러셀은 숨김
+          var stats = updateCounts(raw, group);
+          insP.then(function(ins){
+            var gi = ins && ins.groups && ins.groups[group.name];
+            if (renderTab(raw, group, stats, gi, ins && ins.themes)) root.style.display = 'none';   // 리뷰 탭 새 UI → 캐러셀은 숨김
+          });
         });
         // 스킨의 기존 스크립트(약과 리뷰)가 늦게 끝나 카드를 덮어쓰면 다시 적용 (최대 3회, 20초간)
         var mine = countEl ? countEl.textContent : '', again = 0;
