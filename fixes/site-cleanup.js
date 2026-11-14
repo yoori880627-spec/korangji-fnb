@@ -72,12 +72,22 @@
 
   function start() {
     run();
-    // 늦게 붙는 요소 대비 (20초간)
+    // 배너/팝업 앱이 나중에 다시 그리거나 다시 띄우는 경우 대비:
+    // 처음 30초는 0.4초마다, 이후 5분간 3초마다 다시 확인 (가벼운 작업)
+    var n = 0;
+    var fast = setInterval(function () {
+      run();
+      if (++n >= 75) {
+        clearInterval(fast);
+        var m = 0;
+        var slow = setInterval(function () { run(); if (++m >= 100) clearInterval(slow); }, 3000);
+      }
+    }, 400);
     if (window.MutationObserver) {
       var t = null;
-      var mo = new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); });
-      mo.observe(document.body, { childList: true, subtree: true });
-      setTimeout(function () { mo.disconnect(); run(); }, 20000);
+      var mo = new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 30); });
+      mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+      setTimeout(function () { mo.disconnect(); }, 30000);
     }
   }
 
