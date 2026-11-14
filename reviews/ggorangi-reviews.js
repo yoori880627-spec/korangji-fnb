@@ -302,7 +302,7 @@
         '#prdReview .gj-sub-h{display:flex;align-items:baseline;gap:8px;margin:40px 0 0;padding-bottom:14px;border-bottom:1px solid #111}' +
         '#prdReview .gj-sub-h strong{font-size:17px;font-weight:700;color:#000}' +
         '#prdReview .gj-sub-h span{font-size:12px;color:#999}' +
-        '#prdReview .gj-nv .gj-src{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:3px;background:#03C75A;color:#fff;font-size:11px;font-weight:600;vertical-align:1px}' +
+        '#prdReview .gj-nv .gj-src{display:inline-block;margin-left:2px;padding:0 4px;border-radius:2px;background:#03C75A;color:#fff;font-size:9px;line-height:14px;font-weight:600;letter-spacing:-.2px;vertical-align:1px}' +
         '#prdReview .gj-nv .cont.gj-open{display:block;-webkit-line-clamp:unset;max-height:none}' +
         '#prdReview .gj-nv .gj-morebox{text-align:center;margin:24px 0 8px}' +
         '#prdReview .gj-nv .gj-morebox .btnNormalFix{cursor:pointer}' +
