@@ -3,6 +3,7 @@
  * 문제: 바로구매/장바구니 → 주문하기를 누르면 로그인 화면이 먼저 나오는데,
  *       '비회원 구매' 버튼이 화면 맨 아래에 있어 휴대폰에서는 스크롤해야 보임 → 구매 포기
  * 해결: 주문 흐름에서 들어온 경우(noMember=1 또는 returnUrl 이 주문서)에만
+ *       알파푸시 빠른가입 전체화면 레이어를 숨기고,
  *       로그인 영역 맨 위에 '로그인 없이 바로 주문하기' 버튼을 추가. 기존 버튼/로그인은 그대로 둠.
  */
 (function () {
@@ -14,8 +15,23 @@
     return /[?&]noMember=1/.test(q) || /returnUrl=[^&]*order(%2F|\/)orderform/i.test(q);
   }
 
+  // 주문 흐름에서는 알파푸시 '빠른 회원가입' 전체화면 레이어가 로그인 화면(비회원 구매 버튼 포함)을 덮으므로 숨긴다.
+  // 일반 로그인 화면에서는 그대로 둔다.
+  function hideQuickSignupOverlay() {
+    var st = document.createElement('style');
+    st.textContent = 'push-script-quick-signup{display:none!important}';
+    (document.head || document.documentElement).appendChild(st);
+    var unlock = function () {
+      if (document.body && document.body.style.overflow === 'hidden') document.body.style.overflow = '';
+      if (document.documentElement.style.overflow === 'hidden') document.documentElement.style.overflow = '';
+    };
+    unlock();
+    var n = 0, t = setInterval(function () { unlock(); if (++n > 20) clearInterval(t); }, 500);
+  }
+
   function start() {
     if (!/\/member\/login\.html/.test(location.pathname) || !fromOrder()) return;
+    hideQuickSignupOverlay();
     var orig = document.querySelector('a.btnNonmember');
     if (!orig || document.querySelector('.gj-guest')) return;
     var href = orig.getAttribute('href');
