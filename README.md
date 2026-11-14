@@ -5,6 +5,7 @@
 - `reviews/ggorangi-reviews.js` — 상품상세 하단 스마트스토어 리뷰를 상품군별로 표시 (상품군 설정은 파일 상단 `GROUPS`, 별점 4점 이상 / 최신 30개)
 - `reviews/naverReviews.json` — 스마트스토어 리뷰 엑셀을 변환한 데이터 (주문번호 등 개인정보 제외). 갱신 시 이 파일만 교체 후 jsDelivr purge
 - `fixes/vreview-out-of-buybar.js` — 브이리뷰 위젯이 하단 고정 구매바 안에 들어가 화면을 가리는 문제 수정 (위젯을 구매바 밖으로 이동)
+- `fixes/guest-checkout-cta.js` — 주문 중 로그인 화면 맨 위에 "로그인 없이 바로 주문하기" 버튼 추가 (MEMBER_LOGIN)
 - `landing/ggorangji-landing.js` — 메인 랜딩 (기존 메인 섹션을 숨기고 랜딩 섹션 표시, ScriptTag 삭제 시 원복)
 - `backup/skin9/` — 랜딩 적용 전 실제 스킨(skin9) 원본 파일 백업
   (상품군 설정은 파일 상단 `GROUPS`)
